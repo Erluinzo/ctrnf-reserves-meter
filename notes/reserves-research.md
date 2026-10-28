@@ -94,8 +94,9 @@ Getting the kart:
     (`Octane_BoostBar.igz` placeable 0x3d0: 392x148, scale 0.824x0.737, no behaviors). Its only child is the fill
     "[octane_ui_hud_boost_fill.tga]" (0x520: 77.5x80, pivot (1,0), scale (0.95,0.35)). The game fills it by animating the fill's
     `_scale` from (0, 0.35, 1) to (2.77, 0.35, 1) (track `AnimationTag_BoostFill`, used by `common_Meter_Bar_Root_c`). So: `scale.x = 2.77 * ratio`.
-- Tree walk: children = `[pl+0x48]` table (+0xc count, +0x20 items), as 0x24e510 does (composition contents are children at run time:
-  the style VSCs inside compositions receive the project broadcast, which only walks `_children`).
+- Tree walk: children = `[pl+0x48]` table (+0xc count, +0x20 items), as 0x24e510 does. **Wrong guess, corrected in game
+  2026-10-28:** composition contents are NOT children. A placeable whose `_asset` is an `igGuiComposition` (vtable ELF 0x2431b18)
+  has no `_children`; its content is the composition's `_placeable` (+0x20), whose `_parent` is that placeable. The root shows "Root".
 - Setters (each writes the field and sets the dirty bit `byte [pl+0xd] |= 0x10`):
   | ELF | Call |
   |---|---|
@@ -124,7 +125,7 @@ Getting the kart:
   }
   ```
   Project = `handle_object(&hud+0x38)`, root = `[project+0x10]` (`igGuiProject._rootPlaceable`).
-- Our clones are children of the root, outside every style group, so they show in Classic, Speedometer and Nitro Fueled.
+- Our clones are children of the "Root" composition's content (not of the root itself, see above), outside every style group, so they show in Classic, Speedometer and Nitro Fueled.
   Widescreen layouts scale the HUD in the shader, so the clones are scaled like the rest.
 
 ### B. Text-only bar (simplest fallback)
