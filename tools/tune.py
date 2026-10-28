@@ -15,8 +15,8 @@ PROBE = 0xfcc430    # a game function whose first bytes are known: finds the ima
 PROLOGUE = bytes.fromhex('554889e541574156415541545348')
 STATE = 0x2beef80
 # boosts, reserves, root, text, bar, fill, top, shown, hidden, layout_version, layout_changed,
-# text_pos[3], bar_pos[3], full, hud, project, preview
-LAYOUT = struct.Struct('<Qf4xQQQQQiiii3f3ff4xQQf')
+# text_pos[3], bar_pos[3], full, project, preview
+LAYOUT = struct.Struct('<Qf4xQQQQQiiii3f3ff4xQf')
 
 
 def find_base(mem, pid):
@@ -48,14 +48,14 @@ def main():
             elif args[0] == 'full' and len(args) == 2:
                 v[17] = float(args[1])
             elif args[0] == 'show' and len(args) == 2:
-                v[20] = float(args[1])
+                v[19] = float(args[1])
             else:
                 sys.exit(__doc__)
             v[10] = 1    # layout_changed: the game applies it on its next HUD update
             mem.seek(base + STATE)
             mem.write(LAYOUT.pack(*v))
-    print(f'reserves {v[1]:.2f} s (preview {v[20]:.1f}), shown {v[7]}, hidden {v[8]}')
-    print(f'root {v[2]:#x} text {v[3]:#x} bar {v[4]:#x} fill {v[5]:#x} top {v[6]:#x} hud {v[18]:#x} project {v[19]:#x}')
+    print(f'reserves {v[1]:.2f} s (preview {v[19]:.1f}), shown {v[7]}, hidden {v[8]}')
+    print(f'root {v[2]:#x} text {v[3]:#x} bar {v[4]:#x} fill {v[5]:#x} top {v[6]:#x} project {v[18]:#x}')
     print(f'text at ({v[11]:.0f}, {v[12]:.0f}), bar at ({v[14]:.0f}, {v[15]:.0f}), one layer = {v[17]:.1f} s, layout v{v[9]}')
 
 

@@ -37,18 +37,24 @@ extern const char g_composition_vtable[] GAME;                       /* igGuiCom
 #define TEXT_TEMPLATE "[LapCounterText]"
 #define BAR_TEMPLATE "[octane_ui_hud_boost_bg.tga]"
 #define FILL_SPRITE "[octane_ui_hud_boost_fill.tga]"
+#define MASK_SPRITE "BoostMask"     /* the Nitro Fueled bar's mask, with its fill and white fill inside */
 #define TEXT_NAME "[ReservesText]"
 #define BAR_NAME "[ReservesBar]"
+#define FILL_NAME "[ReservesFill]"
 #define TOP_NAME "[ReservesFillTop]"
+#define BAR_TEXTURE_WIDTH 244.0f
 #define FILL_FULL 2.77f     /* the game's own fill scale for a full turbo meter */
 #define LAYOUT_VERSION 6
 
-/* Layer colors (RGBA, multiplied with the fill texture): the first keeps the game's own color, then
- * the list repeats from the second one. */
+/* White fill color (RGBA) of each layer, as the game colors its turbo bar: green while charging,
+ * orange when full, then blue-white (sacred fire) and green again. After the 4th, layers 2-4 repeat. */
 static const uint8_t COLORS[][4] = {
-    {255, 255, 255, 255}, {60, 150, 255, 255}, {180, 90, 255, 255}, {255, 70, 70, 255}, {70, 230, 90, 255},
+    {16, 200, 0, 255}, {255, 90, 0, 255}, {120, 190, 255, 255}, {16, 200, 0, 255},
 };
-#define COLOR_COUNT (int)(sizeof COLORS / sizeof COLORS[0])
+/* Frame color while each layer grows: the full turbo bar glows, so layers 2 and up color the frame */
+static const uint8_t FRAME_COLORS[][4] = {
+    {255, 255, 255, 255}, {255, 140, 25, 255}, {150, 200, 255, 255}, {120, 255, 100, 255},
+};
 
 struct state {
     void *boosts;           /* boost component of the local player's kart */
@@ -63,7 +69,7 @@ struct state {
     int layout_changed;
     float text_pos[3], bar_pos[3];
     float full;             /* seconds of reserves for a full bar */
-    void *hud, *project;    /* last HUD component and its GUI project (for tools/tune.py) */
+    void *project;          /* last HUD's GUI project (for tools/tune.py) */
     float preview;          /* > 0: show this many seconds instead of the real reserves, until the next HUD (tools/tune.py) */
 };
 _Static_assert(sizeof(struct state) <= 0x80, "state must fit 0x2beef80-0x2bef000");
@@ -174,6 +180,45 @@ static void fill_from_left(void *fill)
     game_set_position(fill, position);
 }
 
+/* A copy of the Nitro Fueled bar's mask (with its color strip and white fill inside), added to the HUD
+ * root after the bar: a sprite is drawn over its own children, so inside the bar the dark middle of
+ * the bar would cover it. place_layer() puts it where the bar's own fill (`fill`) is. */
+static void *layer(void *project, void *mask, void *fill, const char *name)
+{
+    void *piece = copy(project, mask, rv.root, name);
+    if (!piece || !child_count(piece) || !child_count(child(piece, 0))) return piece;
+    void *strip = child(piece, 0);
+    /* The strip and the white fill cover the whole mask, using a flat full-height part of their slanted textures */
+    static const float place[12] = {0, 0, 0, 0.5f, 0.5f, 0.5f, 0, 0, 0, 1, 1, 1};    /* _position to _scale */
+    static const float texture[4] = {0.1f, 0.05f, 0.3f, 0.4f};                      /* _texCoordMin, _texCoordMax */
+    for (int i = -1; i < child_count(strip); i++) {
+        void *inner = i < 0 ? strip : child(strip, i);
+        __builtin_memcpy((char *)inner + 0x60, place, sizeof place);
+        __builtin_memcpy((char *)inner + 0x90, (char *)fill + 0x90, 12);   /* _extent */
+        AT(inner, 0xa0, int32_t) = AT(inner, 0xa4, int32_t) = 2;          /* anchored at the center */
+        __builtin_memcpy((char *)inner + 0xa8, texture, sizeof texture);
+        AT(inner, 0xc, uint32_t) &= ~1u;    /* not cut by the mask's slanted shape */
+        AT(inner, 0xd, uint8_t) |= 0x10;
+    }
+    return piece;
+}
+
+/* `piece` over the bar's own fill (`fill`, a child of the bar: placed from the bar's right end and middle).
+ * The game takes the bar's right end from its texture's width (244), not from _extent (392): found in game. */
+static void place_layer(void *piece, void *fill)
+{
+    void *bar = rv.bar;
+    float sx = AT(bar, 0x84, float), sy = AT(bar, 0x88, float);
+    float place[12] = {AT(bar, 0x60, float) + (BAR_TEXTURE_WIDTH / 2 + AT(fill, 0x60, float)) * sx,
+                       AT(bar, 0x64, float) + AT(fill, 0x64, float) * sy, 0,                            /* _position */
+                       0, 0, 0.5f, 0, 0, 0,                                                               /* _pivot, _rotation */
+                       AT(piece, 0x84, float), AT(fill, 0x88, float) * sy, 1};                          /* _scale (x: see set_fill) */
+    __builtin_memcpy((char *)piece + 0x60, place, sizeof place);
+    __builtin_memcpy((char *)piece + 0x90, (char *)fill + 0x90, 12);       /* _extent */
+    AT(piece, 0xa0, int32_t) = AT(piece, 0xa4, int32_t) = 2;              /* from the root's middle, as the bar */
+    AT(piece, 0xd, uint8_t) |= 0x10;
+}
+
 static void set_layout(void)
 {
     if (rv.layout_version != LAYOUT_VERSION) {
@@ -186,6 +231,8 @@ static void set_layout(void)
     /* The bar sprite is placed from the center of its parent (anchor 2), the text from the top left */
     float bar[3] = {rv.bar_pos[0] - AT(rv.root, 0x90, float) / 2, rv.bar_pos[1] - AT(rv.root, 0x94, float) / 2, 0.0f};
     if (rv.bar) game_set_position(rv.bar, bar);
+    void *fill = rv.bar ? find(rv.bar, FILL_SPRITE, 1, 0) : 0;
+    if (fill && rv.fill && rv.top) place_layer(rv.fill, fill), place_layer(rv.top, fill);
     rv.layout_changed = 0;
     rv.shown = -1;
 }
@@ -213,13 +260,14 @@ void rv_boosts_updated(void *component)
     rv.reserves = left > 0.0f ? left : 0.0f;
 }
 
-/* Fill width (0 to 1) and the color of layer `layer` (0 = the first 30 s) */
-static void set_fill(void *fill, float ratio, int layer)
+/* Width (0 to 1) and look of layer `layer` (0 = the first `full` seconds) */
+static void set_fill(void *piece, float ratio, int layer)
 {
-    float scale[3] = {FILL_FULL * ratio, AT(fill, 0x88, float), AT(fill, 0x8c, float)};
-    game_set_scale(fill, scale);
-    if (layer >= COLOR_COUNT) layer = 1 + (layer - 1) % (COLOR_COUNT - 1);
-    game_set_color(fill, COLORS[layer < 0 ? 0 : layer]);
+    float scale[3] = {FILL_FULL * AT(rv.bar, 0x84, float) * ratio, AT(piece, 0x88, float), AT(piece, 0x8c, float)};
+    game_set_scale(piece, scale);
+    if (layer > 3) layer = 1 + (layer - 1) % 3;
+    void *strip = child_count(piece) ? child(piece, 0) : 0;
+    for (int i = 0; strip && i < child_count(strip); i++) game_set_color(child(strip, i), COLORS[layer]);
 }
 
 static void show(int tenths, float reserves)
@@ -239,8 +287,9 @@ static void show(int tenths, float reserves)
         float layers = rv.full > 0.0f ? reserves / rv.full : 0.0f;
         int layer = (int)layers;    /* full layers below the top one */
         if (layer > 9999) layer = 9999;
-        set_fill(rv.fill, layer ? 1.0f : 0.0f, layer - 1);
+        set_fill(rv.fill, layer ? 1.0f : 0.0f, layer ? layer - 1 : 0);
         set_fill(rv.top, layers - (float)layer, layer);
+        game_set_color(rv.bar, FRAME_COLORS[layer > 3 ? 1 + (layer - 1) % 3 : layer]);
     }
 }
 
@@ -250,6 +299,8 @@ static void set_hidden(int hidden)
     rv.hidden = hidden;
     if (rv.text) game_set_hidden(rv.text, hidden);
     if (rv.bar) game_set_hidden(rv.bar, hidden);
+    if (rv.fill) game_set_hidden(rv.fill, hidden);
+    if (rv.top) game_set_hidden(rv.top, hidden);
 }
 
 /* Called at the start of the racer HUD's per-frame update. */
@@ -258,7 +309,6 @@ void rv_hud_update(void *hud)
     if (!hud || !AT(hud, 0x80, uint8_t)) return;                     /* _isInitialized */
     if (!g_players || game_local_players(AT(g_players, 0x10, void *)) != 1) return;
 
-    rv.hud = hud;
     void *kart = AT(hud, 0x18, void *);
     rv.boosts = kart && g_boost_meta ? game_find_component(kart, g_boost_meta, 0) : 0;
     /* The game stops the boost update once the kart has no boosts left (e.g. a boost cut short by
@@ -278,13 +328,15 @@ void rv_hud_update(void *hud)
         rv.preview = 0.0f;  /* a preview lasts one race only */
         rv.hidden = 0;
         void *text = find(root, TEXT_TEMPLATE, 0, 0), *bar = find(root, BAR_TEMPLATE, 1, 0);
+        void *mask = find(root, MASK_SPRITE, 1, 0), *fill;
         if (!text) return;
         rv.text = copy(project, text, root, TEXT_NAME);
-        if (bar && (rv.bar = copy(project, bar, root, BAR_NAME)) && (rv.fill = find(rv.bar, FILL_SPRITE, 1, 0))) {
-            /* A second fill, added after the first so it is drawn on top of it */
-            rv.top = copy(project, rv.fill, rv.bar, TOP_NAME);
-            fill_from_left(rv.fill);
-            if (rv.top) fill_from_left(rv.top);
+        if (bar && mask && (rv.bar = copy(project, bar, root, BAR_NAME)) && (fill = find(rv.bar, FILL_SPRITE, 1, 0))) {
+            fill_from_left(fill);
+            game_set_hidden(fill, 1);
+            /* The top layer is added last, so it is drawn over the full layer below it */
+            rv.fill = layer(project, mask, fill, FILL_NAME);
+            rv.top = layer(project, mask, fill, TOP_NAME);
         }
         set_layout();
     }
