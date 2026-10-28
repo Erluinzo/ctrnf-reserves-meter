@@ -47,12 +47,9 @@ extern const char g_composition_vtable[] GAME;                       /* igGuiCom
 #define LAYOUT_VERSION 6
 
 /* Colors (RGBA) of the 3 layers, as the game colors its turbo bar: green while charging, orange when
- * full, then blue-white (sacred fire). Above 3 layers the bar stays full. The growing layer and the
- * frame pulse between COLORS and LIGHT. */
+ * full, then blue-white (sacred fire). Above 3 layers the bar stays full. */
 #define LAYERS 3
-#define PULSE_FRAMES 48     /* one light-dark-light pulse, in HUD updates (0.8 s at 60 fps) */
 static const uint8_t COLORS[LAYERS][4] = {{16, 200, 0, 255}, {255, 90, 0, 255}, {120, 190, 255, 255}};
-static const uint8_t LIGHT[LAYERS][4] = {{130, 255, 100, 255}, {255, 200, 80, 255}, {235, 248, 255, 255}};
 static const uint8_t FRAME_COLORS[LAYERS][4] = {{255, 255, 255, 255}, {255, 140, 25, 255}, {150, 200, 255, 255}};
 
 struct state {
@@ -70,7 +67,6 @@ struct state {
     float full;             /* seconds of reserves for a full bar */
     void *project;          /* last HUD's GUI project (for tools/tune.py) */
     float preview;          /* > 0: show this many seconds instead of the real reserves, until the next HUD (tools/tune.py) */
-    int frame;              /* counts HUD updates, for the color pulse */
 };
 _Static_assert(sizeof(struct state) <= 0x80, "state must fit 0x2beef80-0x2bef000");
 extern struct state rv GAME;
@@ -277,31 +273,12 @@ static void set_width(void *piece, float ratio)
     game_set_scale(piece, scale);
 }
 
-/* `a` mixed with `b` (t = 0 to 1) */
-static void mix(uint8_t *out, const uint8_t *a, const uint8_t *b, float t)
-{
-    for (int i = 0; i < 4; i++) out[i] = (uint8_t)(a[i] + (b[i] - a[i]) * t);
-}
-
 static void paint(void *piece, const uint8_t *rgba)
 {
     void *strip = child_count(piece) ? child(piece, 0) : 0;
     for (int i = 0; strip && i < child_count(strip); i++) game_set_color(child(strip, i), rgba);
 }
 
-/* Every HUD update: the growing layer and the frame pulse, the full layer below keeps its color */
-static void animate(float reserves)
-{
-    float part, wave = (float)(rv.frame % PULSE_FRAMES) / (PULSE_FRAMES / 2);
-    if (wave > 1.0f) wave = 2.0f - wave;
-    int layer = layer_of(reserves, &part);
-    uint8_t color[4];
-    mix(color, COLORS[layer], LIGHT[layer], wave);
-    paint(rv.top, color);
-    if (layer) paint(rv.fill, COLORS[layer - 1]);
-    mix(color, FRAME_COLORS[layer], layer ? LIGHT[layer] : FRAME_COLORS[0], wave);
-    game_set_color(rv.bar, color);
-}
 
 static void show(int tenths, float reserves)
 {
@@ -321,6 +298,9 @@ static void show(int tenths, float reserves)
         int layer = layer_of(reserves, &part);
         set_width(rv.fill, layer ? 1.0f : 0.0f);
         set_width(rv.top, part);
+        paint(rv.top, COLORS[layer]);
+        if (layer) paint(rv.fill, COLORS[layer - 1]);
+        game_set_color(rv.bar, FRAME_COLORS[layer]);
     }
 }
 
@@ -383,6 +363,5 @@ void rv_hud_update(void *hud)
         rv.shown = tenths;
         show(tenths, reserves);
     }
-    rv.frame++;
-    if (rv.fill && rv.top) animate(reserves);
+
 }
