@@ -32,7 +32,10 @@ def find_base(mem, pid):
 
 
 def main():
-    pid = int(subprocess.check_output(['pgrep', '-x', 'sacredfire']).split()[0])
+    found = subprocess.run(['pgrep', '-x', 'sacredfire'], capture_output=True, text=True).stdout.split()
+    if not found:
+        sys.exit('The game is not running. Start a race first, then run this again.')
+    pid = int(found[0])
     with open(f'/proc/{pid}/mem', 'r+b') as mem:
         base = find_base(mem, pid)
         mem.seek(base + STATE)
