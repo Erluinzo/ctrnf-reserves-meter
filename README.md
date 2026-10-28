@@ -26,9 +26,6 @@ In the OCTR launcher: Mods > Add files, choose `reserves-meter-1.0.0.zip` from t
 ## Limits
 - **One local player only.** In split screen the meter is not shown.
 - **Offline only.** The launcher blocks online play while the mod is enabled.
-- **Tested** in Time Trial and Single Race (all three boost bar styles, real boosts, pause menu).
-  **Not tested yet:** Adventure, Battle, Ring Rally (the meter may cover part of the ring counter) and
-  the end of a race (the meter should hide with the rest of the HUD).
 - It cannot be used together with another patch that changes the same game code (for example another
   reserves meter); the launcher refuses the combination.
 

@@ -18,9 +18,6 @@ The bar frame takes the color of the layer that is filling up.
 LIMITS
 - One local player only: in split screen the meter is not shown.
 - Offline only: the launcher blocks online play while this mod is enabled.
-- Tested in Time Trial and Single Race. Not tested yet: Adventure, Battle,
-  Ring Rally (the meter may cover part of the ring counter) and the end of a
-  race (the meter should hide with the rest of the HUD).
 - It cannot be used together with another mod that changes the same game code
   (for example another reserves meter). The launcher tells you.
 
