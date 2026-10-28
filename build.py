@@ -15,7 +15,7 @@ ELF = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE.parent / 'CTRNF/out/eboot
 XML = HERE / 'package/patches/ReservesMeter.xml'
 # The owner tests each build at once: a copy goes into the game's patches folder, switched on.
 TEST_COPY = HERE.parent / 'CTRNF/patches/ReservesMeter.xml'
-VERSION = '0.1.6'
+VERSION = '1.0.0'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2339000            # unused zero padding at the end of the code segment (0x2317810-0x233c078);
