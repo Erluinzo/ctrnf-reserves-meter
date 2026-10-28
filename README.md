@@ -6,7 +6,9 @@ For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/
 ## What it does
 **Reserves** are the boost time you have stored by chaining boosts. The game does not show them; this
 patch does, under the lap counter at the top right of the race HUD:
-- **The number:** seconds of reserves left, for example `12.4`.
+- **The number:** the time left on your boost, in seconds, for example `12.4`. It counts down while
+  you drive, and every boost you chain on top (drift, jump, boost pad, item) adds to it. At `0.0` your
+  boost is over.
 - **The bar:** one layer for every 10 seconds, each new layer filling up over the full one below it.
 
   | Reserves | Bar | Frame |

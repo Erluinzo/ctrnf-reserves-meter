@@ -5,6 +5,10 @@ Shows your boost reserves in the race HUD: the boost time you have stored by
 chaining boosts. You see it as a number of seconds ("12.4") and as a bar, under
 the lap counter at the top right.
 
+The number is the time left on your boost: how many seconds of extra speed you
+still have. It counts down while you drive, and every boost you chain on top
+(drift, jump, boost pad, item) adds to it. At 0.0 your boost is over.
+
 It works with every boost bar style: Classic, Speedometer and Nitro Fueled.
 You do not have to use the CNK style.
 
