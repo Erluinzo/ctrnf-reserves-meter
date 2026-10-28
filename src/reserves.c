@@ -51,6 +51,7 @@ struct state {
     int layout_changed;
     float text_pos[3], bar_pos[3];
     float full;             /* seconds of reserves for a full bar */
+    void *hud, *project;    /* last HUD component and its GUI project (for tools/tune.py) */
 };
 _Static_assert(sizeof(struct state) <= 0x80, "state must fit 0x2beef80-0x2bef000");
 extern struct state rv GAME;
@@ -214,10 +215,12 @@ void rv_hud_update(void *hud)
     if (!hud || !AT(hud, 0x80, uint8_t)) return;                     /* _isInitialized */
     if (!g_players || game_local_players(AT(g_players, 0x10, void *)) != 1) return;
 
+    rv.hud = hud;
     void *kart = AT(hud, 0x18, void *);
     rv.boosts = kart && g_boost_meta ? game_find_component(kart, g_boost_meta, 0) : 0;
 
     void *project = handle_object(&AT(hud, 0x38, void *));
+    rv.project = project;
     void *root = project ? AT(project, 0x10, void *) : 0;
     if (!root) return;
     /* A new HUD, or our pieces are gone: add them again. Old pointers are only compared, never used. */

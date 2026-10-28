@@ -14,8 +14,8 @@ PROBE = 0xfcc430    # a game function whose first bytes are known: finds the ima
 PROLOGUE = bytes.fromhex('554889e541574156415541545348')
 STATE = 0x2beef80
 # boosts, reserves, root, text, bar, fill, shown, hidden, layout_version, layout_changed,
-# text_pos[3], bar_pos[3], full
-LAYOUT = struct.Struct('<Qf4xQQQQiiii3f3ff')
+# text_pos[3], bar_pos[3], full, hud, project
+LAYOUT = struct.Struct('<Qf4xQQQQiiii3f3ff4xQQ')
 
 
 def find_base(mem, pid):
@@ -49,6 +49,7 @@ def main():
             mem.seek(base + STATE)
             mem.write(LAYOUT.pack(*v))
     print(f'reserves {v[1]:.2f} s, shown {v[6]}, hidden {v[7]}; root {v[2]:#x} text {v[3]:#x} bar {v[4]:#x} fill {v[5]:#x}')
+    print(f'hud {v[17]:#x} project {v[18]:#x}')
     print(f'text at ({v[10]:.0f}, {v[11]:.0f}), bar at ({v[13]:.0f}, {v[14]:.0f}), full bar = {v[16]:.1f} s, layout v{v[8]}')
 
 
