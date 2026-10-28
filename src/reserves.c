@@ -46,15 +46,14 @@ extern const char g_composition_vtable[] GAME;                       /* igGuiCom
 #define FILL_FULL 2.77f     /* the game's own fill scale for a full turbo meter */
 #define LAYOUT_VERSION 6
 
-/* White fill color (RGBA) of each layer, as the game colors its turbo bar: green while charging,
- * orange when full, then blue-white (sacred fire) and green again. After the 4th, layers 2-4 repeat. */
-static const uint8_t COLORS[][4] = {
-    {16, 200, 0, 255}, {255, 90, 0, 255}, {120, 190, 255, 255}, {16, 200, 0, 255},
-};
-/* Frame color while each layer grows: the full turbo bar glows, so layers 2 and up color the frame */
-static const uint8_t FRAME_COLORS[][4] = {
-    {255, 255, 255, 255}, {255, 140, 25, 255}, {150, 200, 255, 255}, {120, 255, 100, 255},
-};
+/* Colors (RGBA) of the 3 layers, as the game colors its turbo bar: green while charging, orange when
+ * full, then blue-white (sacred fire). Above 3 layers the bar stays full. The growing layer and the
+ * frame pulse between COLORS and LIGHT. */
+#define LAYERS 3
+#define PULSE_FRAMES 48     /* one light-dark-light pulse, in HUD updates (0.8 s at 60 fps) */
+static const uint8_t COLORS[LAYERS][4] = {{16, 200, 0, 255}, {255, 90, 0, 255}, {120, 190, 255, 255}};
+static const uint8_t LIGHT[LAYERS][4] = {{130, 255, 100, 255}, {255, 200, 80, 255}, {235, 248, 255, 255}};
+static const uint8_t FRAME_COLORS[LAYERS][4] = {{255, 255, 255, 255}, {255, 140, 25, 255}, {150, 200, 255, 255}};
 
 struct state {
     void *boosts;           /* boost component of the local player's kart */
@@ -71,6 +70,7 @@ struct state {
     float full;             /* seconds of reserves for a full bar */
     void *project;          /* last HUD's GUI project (for tools/tune.py) */
     float preview;          /* > 0: show this many seconds instead of the real reserves, until the next HUD (tools/tune.py) */
+    int frame;              /* counts HUD updates, for the color pulse */
 };
 _Static_assert(sizeof(struct state) <= 0x80, "state must fit 0x2beef80-0x2bef000");
 extern struct state rv GAME;
@@ -260,14 +260,47 @@ void rv_boosts_updated(void *component)
     rv.reserves = left > 0.0f ? left : 0.0f;
 }
 
-/* Width (0 to 1) and look of layer `layer` (0 = the first `full` seconds) */
-static void set_fill(void *piece, float ratio, int layer)
+/* The layer that grows (0 to LAYERS - 1) and how full it is (0 to 1) */
+static int layer_of(float reserves, float *part)
+{
+    float layers = rv.full > 0.0f ? reserves / rv.full : 0.0f;
+    if (layers > LAYERS) layers = LAYERS;
+    int layer = (int)layers;
+    if (layer > LAYERS - 1) layer = LAYERS - 1;
+    *part = layers - (float)layer;
+    return layer;
+}
+
+static void set_width(void *piece, float ratio)
 {
     float scale[3] = {FILL_FULL * AT(rv.bar, 0x84, float) * ratio, AT(piece, 0x88, float), AT(piece, 0x8c, float)};
     game_set_scale(piece, scale);
-    if (layer > 3) layer = 1 + (layer - 1) % 3;
+}
+
+/* `a` mixed with `b` (t = 0 to 1) */
+static void mix(uint8_t *out, const uint8_t *a, const uint8_t *b, float t)
+{
+    for (int i = 0; i < 4; i++) out[i] = (uint8_t)(a[i] + (b[i] - a[i]) * t);
+}
+
+static void paint(void *piece, const uint8_t *rgba)
+{
     void *strip = child_count(piece) ? child(piece, 0) : 0;
-    for (int i = 0; strip && i < child_count(strip); i++) game_set_color(child(strip, i), COLORS[layer]);
+    for (int i = 0; strip && i < child_count(strip); i++) game_set_color(child(strip, i), rgba);
+}
+
+/* Every HUD update: the growing layer and the frame pulse, the full layer below keeps its color */
+static void animate(float reserves)
+{
+    float part, wave = (float)(rv.frame % PULSE_FRAMES) / (PULSE_FRAMES / 2);
+    if (wave > 1.0f) wave = 2.0f - wave;
+    int layer = layer_of(reserves, &part);
+    uint8_t color[4];
+    mix(color, COLORS[layer], LIGHT[layer], wave);
+    paint(rv.top, color);
+    if (layer) paint(rv.fill, COLORS[layer - 1]);
+    mix(color, FRAME_COLORS[layer], layer ? LIGHT[layer] : FRAME_COLORS[0], wave);
+    game_set_color(rv.bar, color);
 }
 
 static void show(int tenths, float reserves)
@@ -284,12 +317,10 @@ static void show(int tenths, float reserves)
     text[n] = 0;
     if (rv.text) game_set_text(rv.text, text);
     if (rv.fill && rv.top) {
-        float layers = rv.full > 0.0f ? reserves / rv.full : 0.0f;
-        int layer = (int)layers;    /* full layers below the top one */
-        if (layer > 9999) layer = 9999;
-        set_fill(rv.fill, layer ? 1.0f : 0.0f, layer ? layer - 1 : 0);
-        set_fill(rv.top, layers - (float)layer, layer);
-        game_set_color(rv.bar, FRAME_COLORS[layer > 3 ? 1 + (layer - 1) % 3 : layer]);
+        float part;
+        int layer = layer_of(reserves, &part);
+        set_width(rv.fill, layer ? 1.0f : 0.0f);
+        set_width(rv.top, part);
     }
 }
 
@@ -352,4 +383,6 @@ void rv_hud_update(void *hud)
         rv.shown = tenths;
         show(tenths, reserves);
     }
+    rv.frame++;
+    if (rv.fill && rv.top) animate(reserves);
 }
