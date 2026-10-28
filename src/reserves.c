@@ -46,11 +46,11 @@ extern const char g_composition_vtable[] GAME;                       /* igGuiCom
 #define FILL_FULL 2.77f     /* the game's own fill scale for a full turbo meter */
 #define LAYOUT_VERSION 6
 
-/* Colors (RGBA) of the 3 layers, as the game colors its turbo bar: green while charging, orange when
- * full, then blue-white (sacred fire). Above 3 layers the bar stays full. */
+/* Colors (RGBA) of the 3 layers: green (as the charging turbo bar), red, then blue-white (sacred fire).
+ * Above 3 layers the bar stays full. */
 #define LAYERS 3
-static const uint8_t COLORS[LAYERS][4] = {{16, 200, 0, 255}, {255, 90, 0, 255}, {120, 190, 255, 255}};
-static const uint8_t FRAME_COLORS[LAYERS][4] = {{255, 255, 255, 255}, {255, 140, 25, 255}, {150, 200, 255, 255}};
+static const uint8_t COLORS[LAYERS][4] = {{16, 200, 0, 255}, {230, 20, 0, 255}, {120, 190, 255, 255}};
+static const uint8_t FRAME_COLORS[LAYERS][4] = {{255, 255, 255, 255}, {255, 70, 50, 255}, {150, 200, 255, 255}};
 
 struct state {
     void *boosts;           /* boost component of the local player's kart */
