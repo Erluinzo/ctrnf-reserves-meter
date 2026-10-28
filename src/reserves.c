@@ -3,8 +3,8 @@
  * - Boost update (every frame, every kart): for the local player's kart, works out the reserves
  *   (the seconds of boost the next boost would carry on, as the game does at 0xe2e9ab).
  * - HUD update (every frame, local player): once per HUD, copies two of the game's own HUD pieces
- *   (the lap counter text and the classic turbo meter bar) into the HUD root, outside every boost
- *   bar style, so they show in Classic, Speedometer and Nitro Fueled. Then shows the reserves on
+ *   (the lap counter text and the classic turbo meter bar) into the HUD's top level, outside every
+ *   boost bar style, so they show in Classic, Speedometer and Nitro Fueled. Then shows the reserves on
  *   them: "12.4" and a bar.
  * One local player only (no split screen yet). Notes: ../notes/reserves-research.md
  */
@@ -19,6 +19,7 @@ extern void *game_spawn_placeable(void *project, void *source, void *parent) GAM
 extern void game_set_text(void *placeable, const char *text) GAME;
 extern void game_set_position(void *placeable, const float *v) GAME;
 extern void game_set_scale(void *placeable, const float *v) GAME;
+extern void game_set_pivot(void *placeable, const float *v) GAME;
 extern void game_set_opacity(void *placeable, float opacity) GAME;
 extern void game_set_hidden(void *placeable, int hidden) GAME;
 extern void game_handle_resolve(void **slot) GAME;
@@ -29,6 +30,7 @@ extern void game_string_release(void *pool, char *header) GAME;
 extern void *g_boost_meta GAME;                                      /* CKartBoostComponent */
 extern char *g_players GAME;
 extern void *g_string_pool GAME;
+extern const char g_composition_vtable[] GAME;                       /* igGuiComposition */
 
 #define TEXT_TEMPLATE "[LapCounterText]"
 #define BAR_TEMPLATE "[octane_ui_hud_boost_bg.tga]"
@@ -36,7 +38,7 @@ extern void *g_string_pool GAME;
 #define TEXT_NAME "[ReservesText]"
 #define BAR_NAME "[ReservesBar]"
 #define FILL_FULL 2.77f     /* the game's own fill scale for a full turbo meter */
-#define LAYOUT_VERSION 1
+#define LAYOUT_VERSION 4
 
 struct state {
     void *boosts;           /* boost component of the local player's kart */
@@ -110,6 +112,14 @@ static const char *sprite_name(void *placeable)
     return sprite ? AT(sprite, 0x10, const char *) : 0;
 }
 
+/* A placeable that shows a composition (a HUD part made in its own file, e.g.
+ * "Octane_RacerHud_LapDisplay") has no children: the content is the composition's _placeable (+0x20). */
+static void *content(void *placeable)
+{
+    void *asset = handle_object(&AT(placeable, 0x38, void *));
+    return asset && AT(asset, 0, const void *) == g_composition_vtable ? AT(asset, 0x20, void *) : 0;
+}
+
 /* First placeable below `placeable` whose name (or sprite name) is `name` */
 static void *find(void *placeable, const char *name, int by_sprite, int depth)
 {
@@ -121,7 +131,7 @@ static void *find(void *placeable, const char *name, int by_sprite, int depth)
         void *found = find(child(placeable, i), name, by_sprite, depth + 1);
         if (found) return found;
     }
-    return 0;
+    return find(content(placeable), name, by_sprite, depth + 1);
 }
 
 static void rename(void *placeable, const char *name)
@@ -131,11 +141,11 @@ static void rename(void *placeable, const char *name)
     if (old) game_string_release(g_string_pool, old - 0x10);
 }
 
-/* A copy of a template placeable, added at the end of the HUD root */
-static void *copy(void *project, void *template, const char *name)
+/* A copy of a template placeable, added at the end of `parent` */
+static void *copy(void *project, void *template, void *parent, const char *name)
 {
     void *source = AT(template, 0x18, void *);      /* _sourcePlaceable, as the game spawns from */
-    void *placeable = game_spawn_placeable(project, source ? source : template, 0);
+    void *placeable = game_spawn_placeable(project, source ? source : template, parent);
     if (!placeable) return 0;
     rename(placeable, name);
     game_set_opacity(placeable, 1.0f);
@@ -143,16 +153,28 @@ static void *copy(void *project, void *template, const char *name)
     return placeable;
 }
 
+/* The game's fill grows from the right end of the bar; ours grows from the left end */
+static void fill_from_left(void *fill)
+{
+    float left = AT(fill, 0x60, float) - AT(fill, 0x6c, float) * AT(fill, 0x90, float) * FILL_FULL;
+    float pivot[3] = {0.0f, AT(fill, 0x70, float), AT(fill, 0x74, float)};
+    float position[3] = {left, AT(fill, 0x64, float), AT(fill, 0x68, float)};
+    game_set_pivot(fill, pivot);
+    game_set_position(fill, position);
+}
+
 static void set_layout(void)
 {
     if (rv.layout_version != LAYOUT_VERSION) {
         rv.layout_version = LAYOUT_VERSION;
-        rv.text_pos[0] = 1640.0f, rv.text_pos[1] = 900.0f, rv.text_pos[2] = 0.0f;
-        rv.bar_pos[0] = 1640.0f, rv.bar_pos[1] = 950.0f, rv.bar_pos[2] = 0.0f;
-        rv.full = 20.0f;
+        rv.text_pos[0] = 1885.0f, rv.text_pos[1] = 250.0f, rv.text_pos[2] = 0.0f;
+        rv.bar_pos[0] = 1725.0f, rv.bar_pos[1] = 300.0f, rv.bar_pos[2] = 0.0f;
+        rv.full = 5.0f;
     }
     if (rv.text) game_set_position(rv.text, rv.text_pos);
-    if (rv.bar) game_set_position(rv.bar, rv.bar_pos);
+    /* The bar sprite is placed from the center of its parent (anchor 2), the text from the top left */
+    float bar[3] = {rv.bar_pos[0] - AT(rv.root, 0x90, float) / 2, rv.bar_pos[1] - AT(rv.root, 0x94, float) / 2, 0.0f};
+    if (rv.bar) game_set_position(rv.bar, bar);
     rv.layout_changed = 0;
     rv.shown = -1;
 }
@@ -218,10 +240,15 @@ void rv_hud_update(void *hud)
     rv.hud = hud;
     void *kart = AT(hud, 0x18, void *);
     rv.boosts = kart && g_boost_meta ? game_find_component(kart, g_boost_meta, 0) : 0;
+    /* The game stops the boost update once the kart has no boosts left (e.g. a boost cut short by
+     * a wall), so the last value would stay on screen. */
+    void *boosts = rv.boosts ? AT(rv.boosts, 0x28, void *) : 0;
+    if (!boosts || !AT(boosts, 0xc, int32_t)) rv.reserves = 0.0f;
 
     void *project = handle_object(&AT(hud, 0x38, void *));
     rv.project = project;
-    void *root = project ? AT(project, 0x10, void *) : 0;
+    /* The project's root shows the "Root" composition; its content holds every HUD part. */
+    void *root = project && AT(project, 0x10, void *) ? content(AT(project, 0x10, void *)) : 0;
     if (!root) return;
     /* A new HUD, or our pieces are gone: add them again. Old pointers are only compared, never used. */
     if (root != rv.root || !rv.text || !is_child(root, rv.text) || (rv.bar && !is_child(root, rv.bar))) {
@@ -230,9 +257,9 @@ void rv_hud_update(void *hud)
         rv.hidden = 0;
         void *text = find(root, TEXT_TEMPLATE, 0, 0), *bar = find(root, BAR_TEMPLATE, 1, 0);
         if (!text) return;
-        rv.text = copy(project, text, TEXT_NAME);
-        if (bar && (rv.bar = copy(project, bar, BAR_NAME)))
-            rv.fill = find(rv.bar, FILL_SPRITE, 1, 0);
+        rv.text = copy(project, text, root, TEXT_NAME);
+        if (bar && (rv.bar = copy(project, bar, root, BAR_NAME)))
+            if ((rv.fill = find(rv.bar, FILL_SPRITE, 1, 0))) fill_from_left(rv.fill);
         set_layout();
     }
     if (rv.layout_changed || rv.layout_version != LAYOUT_VERSION) set_layout();

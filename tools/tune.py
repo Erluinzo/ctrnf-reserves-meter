@@ -2,8 +2,8 @@
 """Reads or changes the reserves meter's state in the running game (Linux; /proc/PID/mem).
 
   tune.py                 prints the state
-  tune.py text X Y        moves the seconds text (HUD space, 1920 x 1080)
-  tune.py bar X Y         moves the bar
+  tune.py text X Y        moves the seconds text: its right end (HUD space, 1920 x 1080)
+  tune.py bar X Y         moves the bar: its center
   tune.py full SECONDS    reserves for a full bar
 
 The layout must match `struct state` in src/reserves.c.
