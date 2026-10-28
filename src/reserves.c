@@ -41,7 +41,7 @@ extern const char g_composition_vtable[] GAME;                       /* igGuiCom
 #define BAR_NAME "[ReservesBar]"
 #define TOP_NAME "[ReservesFillTop]"
 #define FILL_FULL 2.77f     /* the game's own fill scale for a full turbo meter */
-#define LAYOUT_VERSION 5
+#define LAYOUT_VERSION 6
 
 /* Layer colors (RGBA, multiplied with the fill texture): the first keeps the game's own color, then
  * the list repeats from the second one. */
@@ -64,7 +64,7 @@ struct state {
     float text_pos[3], bar_pos[3];
     float full;             /* seconds of reserves for a full bar */
     void *hud, *project;    /* last HUD component and its GUI project (for tools/tune.py) */
-    float preview;          /* > 0: show this many seconds instead of the real reserves (tools/tune.py) */
+    float preview;          /* > 0: show this many seconds instead of the real reserves, until the next HUD (tools/tune.py) */
 };
 _Static_assert(sizeof(struct state) <= 0x80, "state must fit 0x2beef80-0x2bef000");
 extern struct state rv GAME;
@@ -180,7 +180,7 @@ static void set_layout(void)
         rv.layout_version = LAYOUT_VERSION;
         rv.text_pos[0] = 1885.0f, rv.text_pos[1] = 250.0f, rv.text_pos[2] = 0.0f;
         rv.bar_pos[0] = 1725.0f, rv.bar_pos[1] = 300.0f, rv.bar_pos[2] = 0.0f;
-        rv.full = 30.0f;
+        rv.full = 10.0f;
     }
     if (rv.text) game_set_position(rv.text, rv.text_pos);
     /* The bar sprite is placed from the center of its parent (anchor 2), the text from the top left */
@@ -275,6 +275,7 @@ void rv_hud_update(void *hud)
     if (root != rv.root || !rv.text || !is_child(root, rv.text) || (rv.bar && !is_child(root, rv.bar))) {
         rv.root = root;
         rv.text = rv.bar = rv.fill = rv.top = 0;
+        rv.preview = 0.0f;  /* a preview lasts one race only */
         rv.hidden = 0;
         void *text = find(root, TEXT_TEMPLATE, 0, 0), *bar = find(root, BAR_TEMPLATE, 1, 0);
         if (!text) return;

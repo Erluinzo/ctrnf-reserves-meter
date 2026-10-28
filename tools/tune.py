@@ -5,7 +5,7 @@
   tune.py text X Y        moves the seconds text: its right end (HUD space, 1920 x 1080)
   tune.py bar X Y         moves the bar: its center
   tune.py full SECONDS    reserves for one full bar layer
-  tune.py show SECONDS    shows this value instead of the real reserves (0 = real value again)
+  tune.py show SECONDS    shows this value instead of the real reserves in this race (0 = real value again)
 
 The layout must match `struct state` in src/reserves.c.
 """
