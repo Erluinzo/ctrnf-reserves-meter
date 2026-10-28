@@ -5,7 +5,8 @@
  * - HUD update (every frame, local player): once per HUD, copies two of the game's own HUD pieces
  *   (the lap counter text and the classic turbo meter bar) into the HUD's top level, outside every
  *   boost bar style, so they show in Classic, Speedometer and Nitro Fueled. Then shows the reserves on
- *   them: "12.4" and a bar.
+ *   them: "12.4" and a bar. Each `full` seconds fill one layer; more reserves fill the next layer, in
+ *   a new color, on top of the full one below.
  * One local player only (no split screen yet). Notes: ../notes/reserves-research.md
  */
 #include <stdint.h>
@@ -20,6 +21,7 @@ extern void game_set_text(void *placeable, const char *text) GAME;
 extern void game_set_position(void *placeable, const float *v) GAME;
 extern void game_set_scale(void *placeable, const float *v) GAME;
 extern void game_set_pivot(void *placeable, const float *v) GAME;
+extern void game_set_color(void *placeable, const uint8_t *rgba) GAME;
 extern void game_set_opacity(void *placeable, float opacity) GAME;
 extern void game_set_hidden(void *placeable, int hidden) GAME;
 extern void game_handle_resolve(void **slot) GAME;
@@ -37,14 +39,22 @@ extern const char g_composition_vtable[] GAME;                       /* igGuiCom
 #define FILL_SPRITE "[octane_ui_hud_boost_fill.tga]"
 #define TEXT_NAME "[ReservesText]"
 #define BAR_NAME "[ReservesBar]"
+#define TOP_NAME "[ReservesFillTop]"
 #define FILL_FULL 2.77f     /* the game's own fill scale for a full turbo meter */
-#define LAYOUT_VERSION 4
+#define LAYOUT_VERSION 5
+
+/* Layer colors (RGBA, multiplied with the fill texture): the first keeps the game's own color, then
+ * the list repeats from the second one. */
+static const uint8_t COLORS[][4] = {
+    {255, 255, 255, 255}, {60, 150, 255, 255}, {180, 90, 255, 255}, {255, 70, 70, 255}, {70, 230, 90, 255},
+};
+#define COLOR_COUNT (int)(sizeof COLORS / sizeof COLORS[0])
 
 struct state {
     void *boosts;           /* boost component of the local player's kart */
     float reserves;         /* seconds; written by the boost update */
     void *root;             /* HUD root our pieces were added to */
-    void *text, *bar, *fill;
+    void *text, *bar, *fill, *top;  /* fill: the layer below (full); top: the layer that grows */
     int shown;              /* tenths of a second shown now; -1 = nothing shown yet */
     int hidden;
     /* Layout in HUD space (1920 x 1080). tools/tune.py may change these in the running game and
@@ -54,6 +64,7 @@ struct state {
     float text_pos[3], bar_pos[3];
     float full;             /* seconds of reserves for a full bar */
     void *hud, *project;    /* last HUD component and its GUI project (for tools/tune.py) */
+    float preview;          /* > 0: show this many seconds instead of the real reserves (tools/tune.py) */
 };
 _Static_assert(sizeof(struct state) <= 0x80, "state must fit 0x2beef80-0x2bef000");
 extern struct state rv GAME;
@@ -169,7 +180,7 @@ static void set_layout(void)
         rv.layout_version = LAYOUT_VERSION;
         rv.text_pos[0] = 1885.0f, rv.text_pos[1] = 250.0f, rv.text_pos[2] = 0.0f;
         rv.bar_pos[0] = 1725.0f, rv.bar_pos[1] = 300.0f, rv.bar_pos[2] = 0.0f;
-        rv.full = 5.0f;
+        rv.full = 30.0f;
     }
     if (rv.text) game_set_position(rv.text, rv.text_pos);
     /* The bar sprite is placed from the center of its parent (anchor 2), the text from the top left */
@@ -202,6 +213,15 @@ void rv_boosts_updated(void *component)
     rv.reserves = left > 0.0f ? left : 0.0f;
 }
 
+/* Fill width (0 to 1) and the color of layer `layer` (0 = the first 30 s) */
+static void set_fill(void *fill, float ratio, int layer)
+{
+    float scale[3] = {FILL_FULL * ratio, AT(fill, 0x88, float), AT(fill, 0x8c, float)};
+    game_set_scale(fill, scale);
+    if (layer >= COLOR_COUNT) layer = 1 + (layer - 1) % (COLOR_COUNT - 1);
+    game_set_color(fill, COLORS[layer < 0 ? 0 : layer]);
+}
+
 static void show(int tenths, float reserves)
 {
     char text[8];
@@ -215,11 +235,12 @@ static void show(int tenths, float reserves)
     text[n++] = (char)('0' + tenths % 10);
     text[n] = 0;
     if (rv.text) game_set_text(rv.text, text);
-    if (rv.fill) {
-        float ratio = rv.full > 0.0f ? reserves / rv.full : 0.0f;
-        if (ratio > 1.0f) ratio = 1.0f;
-        float scale[3] = {FILL_FULL * ratio, AT(rv.fill, 0x88, float), AT(rv.fill, 0x8c, float)};
-        game_set_scale(rv.fill, scale);
+    if (rv.fill && rv.top) {
+        float layers = rv.full > 0.0f ? reserves / rv.full : 0.0f;
+        int layer = (int)layers;    /* full layers below the top one */
+        if (layer > 9999) layer = 9999;
+        set_fill(rv.fill, layer ? 1.0f : 0.0f, layer - 1);
+        set_fill(rv.top, layers - (float)layer, layer);
     }
 }
 
@@ -253,13 +274,17 @@ void rv_hud_update(void *hud)
     /* A new HUD, or our pieces are gone: add them again. Old pointers are only compared, never used. */
     if (root != rv.root || !rv.text || !is_child(root, rv.text) || (rv.bar && !is_child(root, rv.bar))) {
         rv.root = root;
-        rv.text = rv.bar = rv.fill = 0;
+        rv.text = rv.bar = rv.fill = rv.top = 0;
         rv.hidden = 0;
         void *text = find(root, TEXT_TEMPLATE, 0, 0), *bar = find(root, BAR_TEMPLATE, 1, 0);
         if (!text) return;
         rv.text = copy(project, text, root, TEXT_NAME);
-        if (bar && (rv.bar = copy(project, bar, root, BAR_NAME)))
-            if ((rv.fill = find(rv.bar, FILL_SPRITE, 1, 0))) fill_from_left(rv.fill);
+        if (bar && (rv.bar = copy(project, bar, root, BAR_NAME)) && (rv.fill = find(rv.bar, FILL_SPRITE, 1, 0))) {
+            /* A second fill, added after the first so it is drawn on top of it */
+            rv.top = copy(project, rv.fill, rv.bar, TOP_NAME);
+            fill_from_left(rv.fill);
+            if (rv.top) fill_from_left(rv.top);
+        }
         set_layout();
     }
     if (rv.layout_changed || rv.layout_version != LAYOUT_VERSION) set_layout();
@@ -268,7 +293,7 @@ void rv_hud_update(void *hud)
     void *racer = handle_object(&AT(hud, 0x28, void *));
     set_hidden(racer && AT(racer, 0x8c, uint8_t));
 
-    float reserves = rv.reserves;
+    float reserves = rv.preview > 0.0f ? rv.preview : rv.reserves;
     int tenths = (int)(reserves * 10.0f + 0.5f);
     if (tenths != rv.shown) {
         rv.shown = tenths;

@@ -15,7 +15,7 @@ ELF = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE.parent / 'CTRNF/out/eboot
 XML = HERE / 'package/patches/ReservesMeter.xml'
 # The owner tests each build at once: a copy goes into the game's patches folder, switched on.
 TEST_COPY = HERE.parent / 'CTRNF/patches/ReservesMeter.xml'
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2339000            # unused zero padding at the end of the code segment (0x2317810-0x233c078);
@@ -27,6 +27,7 @@ GAME = {
     'game_boost_update': 0xe75250, 'game_hud_body': 0xe5aa36, 'game_maintained': 0xe2f050,
     'game_find_component': 0x3dbf90, 'game_spawn_placeable': 0x253c00, 'game_set_text': 0x268ef0,
     'game_set_position': 0x268f90, 'game_set_scale': 0x269120, 'game_set_pivot': 0x269190,
+    'game_set_color': 0x269460,
     'game_set_opacity': 0x2694a0, 'game_set_hidden': 0x2694d0, 'game_handle_resolve': 0x149fca0,
     'game_local_players': 0xc21630, 'game_string': 0x1574080, 'game_string_release': 0x1518e30,
     # data
