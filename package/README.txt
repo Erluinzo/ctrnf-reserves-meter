@@ -10,7 +10,6 @@ still have. It counts down while you drive, and every boost you chain on top
 (drift, jump, boost pad, item) adds to it. At 0.0 your boost is over.
 
 It works with every boost bar style: Classic, Speedometer and Nitro Fueled.
-You do not have to use the CNK style.
 
 THE BAR
   0 to 10 s:   green fills up
@@ -23,9 +22,6 @@ LIMITS
 - One local player only: in split screen the meter is not shown.
 - It cannot be used together with another mod that changes the same game code
   (for example another reserves meter). The launcher tells you.
-
-Idea from tomtotom's "CNK Drift Gauge + Reserves Meter". This mod is written
-from scratch and uses none of its code or files.
 
 GAME: Crash Team Racing Nitro-Fueled version 1.21, OCTR launcher with
 code-signature support. There is one ZIP per game edition:

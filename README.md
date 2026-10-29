@@ -18,8 +18,8 @@ patch does, under the lap counter at the top right of the race HUD:
   | 20 to 30 s | blue-white fills up over full red | blue-white |
   | above 30 s | stays full blue-white (the number keeps counting) | blue-white |
 
-It works with **every boost bar style** (Classic, Speedometer and Nitro Fueled), so you do not have to
-use the CNK style. The meter hides in the pause menu.
+It works with **every boost bar style** (Classic, Speedometer and Nitro Fueled). The meter hides in the
+pause menu.
 
 ## Install
 Download the ZIP for your game from the [releases](https://github.com/Erluinzo/ctrnf-reserves-meter/releases):
@@ -42,10 +42,6 @@ The patch adds two small hooks to the game:
   the HUD, outside every boost bar style, and then sets their text, width and colors.
 
 No game files are changed. Notes on the game code: `notes/`.
-
-## Credits
-Idea from tomtotom's [CNK Drift Gauge + Reserves Meter](https://gamebanana.com/mods/729041). This patch is
-written from scratch and uses none of its code or files.
 
 ## Building (developers)
 Needs the OCTR checkout at `../CTRNF` (with `out/eboot.elf` from a USA build, and the EU executable at

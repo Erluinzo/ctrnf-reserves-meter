@@ -2,7 +2,7 @@
 
 ELF addresses of `CTRNF/out/eboot.elf` (patch XML = + 0x400000). Read from code and assets only; nothing was run.
 "Verified" = read in code or asset. "Guess" / "unverified" = not tested in game.
-tomtotom's mod was not opened; everything here comes from the original executable and the original .pak files.
+Everything here comes from the original executable and the original .pak files.
 Field names come from the reflection tables (method in `CTRNF-Mods/notes/time-trial.md`).
 
 ## Answer (recommended, code only, no asset change)

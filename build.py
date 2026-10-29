@@ -19,8 +19,8 @@ VERSION = '1.1.0'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2339000            # unused zero padding at the end of the code segment (USA 0x2317810-0x233c078,
-                            # EU 0x23177d0-0x233c038); before: tomtotom's drift gauge, ghost sharing (to
-                            # 0x2337fff), Time Trial (to 0x23381f1)
+                            # EU 0x23177d0-0x233c038); before: ghost sharing (to 0x2337fff), Time Trial
+                            # (to 0x23381f1)
 STATE = 0x2beef80           # after the game's data (ends 0x2bee66d) and ghost sharing's state (to 0x2beef80)
 STATE_END = 0x2bef000       # the page end
 MAX_WRITE = 4096
