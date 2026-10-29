@@ -29,8 +29,8 @@
     },
     {
       "file": "patches/ReservesMeter-EU.xml",
-      "sha256": "c5ccfbd1fe0402c0d2e718328363bb0580b9919e5c3e0a1b0c208bb409b19ab4",
-      "bytes": 10686
+      "sha256": "a4a5cce97a067bfcbc5315eb2f0d63427acf9402f18f5efd5a5d93ef7b563490",
+      "bytes": 10718
     }
   ]
 }

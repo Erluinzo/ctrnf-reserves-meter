@@ -31,6 +31,9 @@ extern void game_string_release(void *pool, char *header) GAME;
 /* Game data */
 extern void *g_boost_meta GAME;                                      /* CKartBoostComponent */
 extern char *g_players GAME;
+/* Set by the Time Trial Spectator Mode mod: the watched ghost's kart during a spectator run, else 0.
+ * The memory is 0 when that mod is not installed. */
+extern void *g_spectate_kart GAME;
 extern void *g_string_pool GAME;
 extern const char g_composition_vtable[] GAME;                       /* igGuiComposition */
 
@@ -320,7 +323,7 @@ void rv_hud_update(void *hud)
     if (!hud || !AT(hud, 0x80, uint8_t)) return;                     /* _isInitialized */
     if (!g_players || game_local_players(AT(g_players, 0x10, void *)) != 1) return;
 
-    void *kart = AT(hud, 0x18, void *);
+    void *kart = g_spectate_kart ? g_spectate_kart : AT(hud, 0x18, void *);
     rv.boosts = kart && g_boost_meta ? game_find_component(kart, g_boost_meta, 0) : 0;
     /* The game stops the boost update once the kart has no boosts left (e.g. a boost cut short by
      * a wall), so the last value would stay on screen. */
