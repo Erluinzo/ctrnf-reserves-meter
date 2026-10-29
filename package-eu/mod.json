@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 2,
+  "id": "reserves-meter-eu",
+  "name": "Reserves Meter (EU)",
+  "version": "1.1.0",
+  "author": "Onur",
+  "description": "Shows your boost reserves (the boost time you have stored) as a bar and in seconds, under the lap counter, in every boost bar style: Classic, Speedometer and Nitro Fueled. The bar fills green up to 10 s, red up to 20 s and blue-white up to 30 s.",
+  "requiresCapabilities": [
+    "xml-patches",
+    "code-signatures"
+  ],
+  "compatibility": {
+    "online": "allowed"
+  },
+  "operations": [],
+  "patches": [
+    "patches/ReservesMeter-EU.xml"
+  ],
+  "files": [
+    {
+      "file": "README.txt",
+      "sha256": "2dabe0322fcba0311bbb07dddea0fc89425cff391f6a90ac2c2dffdb2f6a15e4",
+      "bytes": 2078
+    },
+    {
+      "file": "octr-mod.required",
+      "sha256": "2d5586c93e82ea2dbaaf8ddd5fc63068a0399479ef9824fb49c477b62a4ccc26",
+      "bytes": 19
+    },
+    {
+      "file": "patches/ReservesMeter-EU.xml",
+      "sha256": "c5ccfbd1fe0402c0d2e718328363bb0580b9919e5c3e0a1b0c208bb409b19ab4",
+      "bytes": 10686
+    }
+  ]
+}

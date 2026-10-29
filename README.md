@@ -1,7 +1,7 @@
 # Reserves Meter (CTR Nitro-Fueled, OCTR PC port)
 
 A game patch by Onur: shows your boost reserves as a bar and in seconds, in every boost bar style.
-For the USA game, CUSA13795 version 1.21, on the [OCTR port](https://github.com/Ryu7w7/OCTR-NitroFueled-PC).
+For the game version 1.21, USA (CUSA13795) or EU (CUSA14876), on the [OCTR port](https://github.com/Ryu7w7/OCTR-NitroFueled-PC).
 
 ## What it does
 **Reserves** are the boost time you have stored by chaining boosts. The game does not show them; this
@@ -22,8 +22,11 @@ It works with **every boost bar style** (Classic, Speedometer and Nitro Fueled),
 use the CNK style. The meter hides in the pause menu.
 
 ## Install
-In the OCTR launcher: Mods > Add files, choose `reserves-meter-1.0.1.zip` from the
-[releases](https://github.com/Erluinzo/ctrnf-reserves-meter/releases), enable it, fully restart the game.
+Download the ZIP for your game from the [releases](https://github.com/Erluinzo/ctrnf-reserves-meter/releases):
+`reserves-meter-<version>.zip` for USA (CUSA13795), `reserves-meter-eu-<version>.zip` for EU (CUSA14876).
+In the OCTR launcher: Mods > Add files, choose it, enable it, fully restart the game. To update, add the
+new ZIP and remove the old one. Use only the ZIP for your game: with the other one enabled, the game does
+not start ("executable patch targets a different game edition/version").
 
 ## Limits
 - **One local player only.** In split screen the meter is not shown.
@@ -45,11 +48,12 @@ Idea from tomtotom's [CNK Drift Gauge + Reserves Meter](https://gamebanana.com/m
 written from scratch and uses none of its code or files.
 
 ## Building (developers)
-Needs the OCTR checkout at `../CTRNF` (with `out/eboot.elf` from a build), gcc and binutils
+Needs the OCTR checkout at `../CTRNF` (with `out/eboot.elf` from a USA build, and the EU executable at
+`orig/CUSA14876-eboot.elf`), gcc and binutils
 (`tools/elf_look.py` also needs `pip install capstone`).
 
 ```sh
-python3 build.py         # writes package/patches/ReservesMeter.xml (+ a switched-on copy in ../CTRNF/patches)
+python3 build.py         # writes package/ (USA) and package-eu/ (EU) (+ switched-on copies in ../CTRNF/patches)
 python3 tools/tune.py    # state of the meter in the running game (Linux); see its help for live changes
 ```
 

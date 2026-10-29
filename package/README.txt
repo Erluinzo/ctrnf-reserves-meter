@@ -1,4 +1,4 @@
-Reserves Meter 1.0.1
+Reserves Meter 1.1.0
 Author: Onur
 
 Shows your boost reserves in the race HUD: the boost time you have stored by
@@ -27,12 +27,21 @@ LIMITS
 Idea from tomtotom's "CNK Drift Gauge + Reserves Meter". This mod is written
 from scratch and uses none of its code or files.
 
-GAME: Crash Team Racing Nitro-Fueled, USA (CUSA13795) version 1.21, OCTR
-launcher with code-signature support. The launcher checks the game code before
-it applies the patch and refuses it on any other game build. The EU edition is
-not supported.
+GAME: Crash Team Racing Nitro-Fueled version 1.21, OCTR launcher with
+code-signature support. There is one ZIP per game edition:
+  reserves-meter-<version>.zip      USA (CUSA13795)
+  reserves-meter-eu-<version>.zip   EU (CUSA14876), shown as "Reserves Meter (EU)"
+Use only the one for your game: with the other one enabled, the game does not
+start ("executable patch targets a different game edition/version"). The
+launcher checks the game code before it applies the patch.
 
-INSTALL: Mods > Add files, choose this ZIP, enable it, fully restart the game.
+INSTALL: Mods > Add files, choose the ZIP for your game, enable it, fully
+restart the game.
+UPDATE: add the new ZIP and remove the old one.
 UNINSTALL: disable or remove it.
+
+CHANGES
+1.1.0: EU edition (CUSA14876) supported, as a second ZIP. Allowed online (it
+only changes what your own screen shows); 1.0.0 was marked offline only.
 
 Source code (MIT license): https://github.com/Erluinzo/ctrnf-reserves-meter
