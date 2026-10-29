@@ -1,4 +1,4 @@
-Reserves Meter 1.0.0
+Reserves Meter 1.0.1
 Author: Onur
 
 Shows your boost reserves in the race HUD: the boost time you have stored by
@@ -21,7 +21,6 @@ The bar frame takes the color of the layer that is filling up.
 
 LIMITS
 - One local player only: in split screen the meter is not shown.
-- Offline only: the launcher blocks online play while this mod is enabled.
 - It cannot be used together with another mod that changes the same game code
   (for example another reserves meter). The launcher tells you.
 

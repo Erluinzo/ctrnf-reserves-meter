@@ -22,12 +22,11 @@ It works with **every boost bar style** (Classic, Speedometer and Nitro Fueled),
 use the CNK style. The meter hides in the pause menu.
 
 ## Install
-In the OCTR launcher: Mods > Add files, choose `reserves-meter-1.0.0.zip` from the
+In the OCTR launcher: Mods > Add files, choose `reserves-meter-1.0.1.zip` from the
 [releases](https://github.com/Erluinzo/ctrnf-reserves-meter/releases), enable it, fully restart the game.
 
 ## Limits
 - **One local player only.** In split screen the meter is not shown.
-- **Offline only.** The launcher blocks online play while the mod is enabled.
 - It cannot be used together with another patch that changes the same game code (for example another
   reserves meter); the launcher refuses the combination.
 

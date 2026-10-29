@@ -7,7 +7,7 @@
   <TitleID><ID>CUSA13795</ID></TitleID>
   <Metadata Title="Crash Team Racing Nitro-Fueled" Name="Reserves Meter"
             Note="Shows your boost reserves as a bar and in seconds, in every boost bar style."
-            Author="Onur" PatchVer="1.0.0" AppVer="01.21" AppElf="eboot.bin">
+            Author="Onur" PatchVer="1.0.1" AppVer="01.21" AppElf="eboot.bin">
     <PatchList>
       <Line Type="bytes" Address="0x01275240" Value="e91c4d4c019090909090" Signature="90 90 90 90 90 90 90 90 c5 fa 10 42 18 e9 06 00 00 00 90 90 90 90 90 90 55 48" SignatureOffset="0x8" ExpectedSHA256="ad049e0c02117425298e38442400284eed1cfe7c64d3dba71c212be41d8f216b" />
       <Line Type="bytes" Address="0x0125aa30" Value="e960f54d0190" Signature="90 90 90 90 90 90 90 90 55 48 89 e5 41 57 41 56 41 55 41 54 53 50 8a 05 24 7e" SignatureOffset="0x8" ExpectedSHA256="f909b8f17e0b649494430b8edcbf48a7bd51781dbdbb327ef8bf85744198ef45" />
