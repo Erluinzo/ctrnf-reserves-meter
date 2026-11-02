@@ -15,7 +15,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 GAME_DIR = HERE.parent / 'CTRNF'
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2339000            # unused zero padding at the end of the code segment (USA 0x2317810-0x233c078,
@@ -44,7 +44,7 @@ EDITIONS = {
             'game_set_opacity': 0x2694a0, 'game_set_hidden': 0x2694d0, 'game_handle_resolve': 0x149fca0,
             'game_local_players': 0xc21630, 'game_string': 0x1574080, 'game_string_release': 0x1518e30,
             # data
-            'g_boost_meta': 0x2ac4018, 'g_players': 0x2ad1160, 'g_string_pool': 0x2af2600, 'rv': STATE, 'g_spectate_kart': 0x2beef78,
+            'g_boost_meta': 0x2ac4018, 'g_players': 0x2ad1160, 'g_string_pool': 0x2af2600, 'rv': STATE, 'g_spectate_kart': 0x2beef78, 'g_race_replay': 0x2beea78,
             'g_composition_vtable': 0x2431b18,      # igGuiComposition objects start with this
         }),
     'CUSA14876': dict(
@@ -59,7 +59,7 @@ EDITIONS = {
             'game_set_opacity': 0x2694a0, 'game_set_hidden': 0x2694d0, 'game_handle_resolve': 0x149fc90,
             'game_local_players': 0xc21630, 'game_string': 0x1574070, 'game_string_release': 0x1518e20,
             # data
-            'g_boost_meta': 0x2ac4018, 'g_players': 0x2ad1160, 'g_string_pool': 0x2af2600, 'rv': STATE, 'g_spectate_kart': 0x2beef78,
+            'g_boost_meta': 0x2ac4018, 'g_players': 0x2ad1160, 'g_string_pool': 0x2af2600, 'rv': STATE, 'g_spectate_kart': 0x2beef78, 'g_race_replay': 0x2beea78,
             'g_composition_vtable': 0x2431b18,
         }),
 }

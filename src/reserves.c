@@ -34,6 +34,9 @@ extern char *g_players GAME;
 /* Set by the Time Trial Spectator Mode mod: the watched ghost's kart during a spectator run, else 0.
  * The memory is 0 when that mod is not installed. */
 extern void *g_spectate_kart GAME;
+/* The Replay Mode mod's state (0 without that mod): its second word, with bit 31 set, is the watched
+ * racer's recorded reserves in a race replay (1/100 s) */
+extern uint32_t *g_race_replay GAME;
 extern void *g_string_pool GAME;
 extern const char g_composition_vtable[] GAME;                       /* igGuiComposition */
 
@@ -47,7 +50,7 @@ extern const char g_composition_vtable[] GAME;                       /* igGuiCom
 #define TOP_NAME "[ReservesFillTop]"
 #define BAR_TEXTURE_WIDTH 244.0f
 #define FILL_FULL 2.77f     /* the game's own fill scale for a full turbo meter */
-#define LAYOUT_VERSION 6
+#define LAYOUT_VERSION 7
 
 /* Colors (RGBA) of the 3 layers: green (as the charging turbo bar), red, then blue-white (sacred fire).
  * Above 3 layers the bar stays full. */
@@ -70,6 +73,7 @@ struct state {
     float full;             /* seconds of reserves for a full bar */
     void *project;          /* last HUD's GUI project (for tools/tune.py) */
     float preview;          /* > 0: show this many seconds instead of the real reserves, until the next HUD (tools/tune.py) */
+    int style;              /* the HUD style the layout is for (hud +0x8c _boostBarIndex), -1 none yet */
 };
 _Static_assert(sizeof(struct state) <= 0x80, "state must fit 0x2beef80-0x2bef000");
 extern struct state rv GAME;
@@ -218,12 +222,26 @@ static void place_layer(void *piece, void *fill)
     AT(piece, 0xd, uint8_t) |= 0x10;
 }
 
+/* The meter sits right under the game's turbo bar, in a row: the bar under the bar, its seconds on its left. The
+ * game's bars go up by LIFT to make room. Per HUD style (0 Classic, 1 Speedometer, 2 Nitro Fueled): the text's
+ * right end and the bar's center, in HUD space (1920 x 1080). */
+#define LIFT 20.0f
+#define THIN 0.62f              /* the meter's bar is thinner than the game's (told apart, room at the bottom) */
+#define TEXT_SIZE 0.8f
+static const float PLACES[3][4] = {{1620, 1029, 1732, 1029}, {1585, 1029, 1698, 1029}, {1621, 1029, 1733, 1029}};
+/* The height the game gives its bar groups (root parts, by their asset's name), or 0 for other parts */
+static float bar_height(const char *name)
+{
+    return same_text(name, "Octane_BoostBar") ? 1008.0f : same_text(name, "Speedometer") ? 950.0f : same_text(name, "NF_Bars") ? 914.0f : 0.0f;
+}
+
 static void set_layout(void)
 {
-    if (rv.layout_version != LAYOUT_VERSION) {
+    if (rv.layout_version != LAYOUT_VERSION || rv.style < 0) {
+        int style = rv.style >= 0 && rv.style < 3 ? rv.style : 0;
         rv.layout_version = LAYOUT_VERSION;
-        rv.text_pos[0] = 1885.0f, rv.text_pos[1] = 250.0f, rv.text_pos[2] = 0.0f;
-        rv.bar_pos[0] = 1725.0f, rv.bar_pos[1] = 300.0f, rv.bar_pos[2] = 0.0f;
+        rv.text_pos[0] = PLACES[style][0], rv.text_pos[1] = PLACES[style][1], rv.text_pos[2] = 0.0f;
+        rv.bar_pos[0] = PLACES[style][2], rv.bar_pos[1] = PLACES[style][3], rv.bar_pos[2] = 0.0f;
         rv.full = 10.0f;
     }
     if (rv.text) game_set_position(rv.text, rv.text_pos);
@@ -234,6 +252,18 @@ static void set_layout(void)
     if (fill && rv.fill && rv.top) place_layer(rv.fill, fill), place_layer(rv.top, fill);
     rv.layout_changed = 0;
     rv.shown = -1;
+}
+
+/* The game's bar groups up by LIFT: each frame, as the game sets them again when the style changes */
+static void lift_bars(void *root)
+{
+    for (int i = 0; i < child_count(root); i++) {
+        void *part = child(root, i);
+        float y = AT(part, 0x64, float), height = bar_height(sprite_name(part));
+        if (!height || y < height - 0.5f || y > height + 0.5f) continue;
+        float at[3] = {AT(part, 0x60, float), y - LIFT, AT(part, 0x68, float)};
+        game_set_position(part, at);
+    }
 }
 
 /* Called after the game updates a kart's boosts (once per frame per kart). */
@@ -345,7 +375,13 @@ void rv_hud_update(void *hud)
         void *mask = find(root, MASK_SPRITE, 1, 0), *fill;
         if (!text) return;
         rv.text = copy(project, text, root, TEXT_NAME);
-        if (bar && mask && (rv.bar = copy(project, bar, root, BAR_NAME)) && (fill = find(rv.bar, FILL_SPRITE, 1, 0))) {
+        float size[3] = {TEXT_SIZE, TEXT_SIZE, 1.0f};
+        if (rv.text) game_set_scale(rv.text, size);
+        if (bar && mask && (rv.bar = copy(project, bar, root, BAR_NAME))) {
+            float thin[3] = {AT(rv.bar, 0x84, float), AT(rv.bar, 0x88, float) * THIN, 1.0f};
+            game_set_scale(rv.bar, thin);
+        }
+        if (rv.bar && mask && (fill = find(rv.bar, FILL_SPRITE, 1, 0))) {
             fill_from_left(fill);
             game_set_hidden(fill, 1);
             /* The top layer is added last, so it is drawn over the full layer below it */
@@ -354,6 +390,10 @@ void rv_hud_update(void *hud)
         }
         set_layout();
     }
+    lift_bars(root);
+    /* the layout of the HUD style shown (Triangle changes it in a race) */
+    int style = AT(hud, 0x8c, int32_t);
+    if (style != rv.style) rv.style = style, rv.layout_version = 0;
     if (rv.layout_changed || rv.layout_version != LAYOUT_VERSION) set_layout();
 
     /* Hidden after the finish line, as the rest of the race HUD */
@@ -361,6 +401,7 @@ void rv_hud_update(void *hud)
     set_hidden(racer && AT(racer, 0x8c, uint8_t));
 
     float reserves = rv.preview > 0.0f ? rv.preview : rv.reserves;
+    if (g_race_replay && (g_race_replay[1] & 0x80000000u)) reserves = (float)(g_race_replay[1] & 0x7fffffffu) / 100.0f;
     int tenths = (int)(reserves * 10.0f + 0.5f);
     if (tenths != rv.shown) {
         rv.shown = tenths;

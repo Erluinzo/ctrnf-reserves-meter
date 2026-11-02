@@ -16,7 +16,7 @@ PROLOGUE = bytes.fromhex('554889e541574156415541545348')
 STATE = 0x2beef80
 # boosts, reserves, root, text, bar, fill, top, shown, hidden, layout_version, layout_changed,
 # text_pos[3], bar_pos[3], full, project, preview
-LAYOUT = struct.Struct('<Qf4xQQQQQiiii3f3ff4xQf')
+LAYOUT = struct.Struct('<Qf4xQQQQQiiii3f3ff4xQfi')
 
 
 def find_base(mem, pid):
