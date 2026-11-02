@@ -1,4 +1,4 @@
-Reserves Meter 1.2.0 - by Onur
+Reserves Meter 1.2.1 - by Onur
 
 Shows your boost reserves in the race HUD: seconds left ("12.4") and a bar,
 right under the turbo bar (moved up a little). Works with every boost bar

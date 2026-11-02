@@ -15,7 +15,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 GAME_DIR = HERE.parent / 'CTRNF'
-VERSION = '1.2.0'
+VERSION = '1.2.1'
 EBOOT_BASE = 0x400000       # patch XML addresses are ELF addresses + 0x400000
 
 CODE = 0x2339000            # unused zero padding at the end of the code segment (USA 0x2317810-0x233c078,
@@ -193,6 +193,7 @@ def eu_package():
                     patches=['patches/ReservesMeter-EU.xml'], files=[])
     (HERE / 'package-eu/mod.json').write_text(json.dumps(manifest, indent=2) + '\n')
     shutil.copy(HERE / 'package/README.txt', HERE / 'package-eu/README.txt')
+    shutil.copy(HERE / 'package/gamebananapageurl.txt', HERE / 'package-eu/gamebananapageurl.txt')
 
 
 def main():

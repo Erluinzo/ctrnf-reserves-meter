@@ -2,7 +2,7 @@
   "schemaVersion": 2,
   "id": "reserves-meter",
   "name": "Reserves Meter",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "Onur",
   "description": "Shows your boost reserves (the boost time you have stored) as a bar and in seconds, right under the turbo bar, in every boost bar style: Classic, Speedometer and Nitro Fueled. The bar fills green up to 10 s, red up to 20 s and blue-white up to 30 s.",
   "requiresCapabilities": [
@@ -19,8 +19,13 @@
   "files": [
     {
       "file": "README.txt",
-      "sha256": "2fdb2378ebcaac9fd418b5fd240295e5e6af2b219e2ae3d118d12f5d848c4312",
+      "sha256": "d406bc65ee378de734605080f954fb227d3ceffbe836a9e3217f77cad198ea34",
       "bytes": 718
+    },
+    {
+      "file": "gamebananapageurl.txt",
+      "sha256": "dcf5fc054efaa9e8431838814fea9b9a93760d32f1bb215e47b36158619fa731",
+      "bytes": 34
     },
     {
       "file": "octr-mod.required",
@@ -29,7 +34,7 @@
     },
     {
       "file": "patches/ReservesMeter.xml",
-      "sha256": "8b3178725ee01acae9585ff3f835b5854ec9f8f6069f771d244b6ac9368bc5a5",
+      "sha256": "b029d6bcd25e98692dab812e821ab8ca2be5316cc971558b3ae7935a495f19ad",
       "bytes": 12522
     }
   ]
