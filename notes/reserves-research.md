@@ -3,7 +3,7 @@
 ELF addresses of `CTRNF/out/eboot.elf` (patch XML = + 0x400000). Read from code and assets only; nothing was run.
 "Verified" = read in code or asset. "Guess" / "unverified" = not tested in game.
 Everything here comes from the original executable and the original .pak files.
-Field names come from the reflection tables (method in `CTRNF-Mods/notes/time-trial.md`).
+Field names come from the reflection tables (method in `CTRNF-Tools/notes/time-trial.md`).
 
 ## Answer (recommended, code only, no asset change)
 1. Hook the boost component's per-frame update (0xe75240). After the game updates the boost list, compute the reserves of
